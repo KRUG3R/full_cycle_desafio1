@@ -1,0 +1,1 @@
+sqlite3 desafio1.db < createTable.sql

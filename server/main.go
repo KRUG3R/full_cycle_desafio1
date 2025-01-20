@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
+	// _ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -16,7 +17,7 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-type Currency struct {
+type Detalhes struct {
 	Code       string `json:"code"`
 	Codein     string `json:"codein"`
 	Name       string `json:"name"`
@@ -31,7 +32,7 @@ type Currency struct {
 }
 
 type Cambio struct {
-	USDBRL Currency `json:"USDBRL"`
+	USDBRL Detalhes `json:"USDBRL"`
 }
 
 func (cambio *Cambio) GetCambio() {
@@ -48,7 +49,7 @@ func (cambio *Cambio) GetCambio() {
 	}
 
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		panic(err)
 	}
@@ -66,3 +67,9 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(cambio)
 }
+
+// func PersisteDB(cambio Cambio) {
+// 	db, err := sql.Open("sqlite3", "./cambio.db")
+// 	insertSQL := `INSERT INTO cambio (code, codein, name, high, low, varBid, pctChange, bid, ask, timestamp, create_date) Values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+// }
