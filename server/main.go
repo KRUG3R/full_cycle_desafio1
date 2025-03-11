@@ -43,8 +43,13 @@ func (cambio *Cambio) GetCambio() {
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx1, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
 	if err != nil {
+		if ctx1.Err() == context.DeadlineExceeded {
+			fmt.Println("Timeout da chamada atingido")
+		}
+		fmt.Println("foi?")
 		panic(err)
 	}
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)
@@ -96,8 +101,15 @@ func PersisteDB(cambio Cambio) error {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(cambio.USDBRL.Code, cambio.USDBRL.Codein, cambio.USDBRL.Name, cambio.USDBRL.High, cambio.USDBRL.Low, cambio.USDBRL.VarBid, cambio.USDBRL.PctChange, cambio.USDBRL.Bid, cambio.USDBRL.Ask, cambio.USDBRL.Timestamp, cambio.USDBRL.CreateDate)
+	ctx2 := context.Background()
+	ctx2, cancel := context.WithTimeout(ctx2, time.Millisecond*10)
+	defer cancel()
+
+	_, err = stmt.ExecContext(ctx2, cambio.USDBRL.Code, cambio.USDBRL.Codein, cambio.USDBRL.Name, cambio.USDBRL.High, cambio.USDBRL.Low, cambio.USDBRL.VarBid, cambio.USDBRL.PctChange, cambio.USDBRL.Bid, cambio.USDBRL.Ask, cambio.USDBRL.Timestamp, cambio.USDBRL.CreateDate)
 	if err != nil {
+		if ctx2.Err() == context.DeadlineExceeded {
+			fmt.Println("Timeout da chamada ao SQLITE atingido")
+		}
 		msg := fmt.Errorf("Erro ao executar a query: %v", err)
 		fmt.Println(msg)
 		return msg
