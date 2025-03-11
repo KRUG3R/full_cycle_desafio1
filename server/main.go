@@ -46,7 +46,6 @@ func (cambio *Cambio) GetCambio() {
 		if ctx1.Err() == context.DeadlineExceeded {
 			fmt.Println("Timeout da chamada atingido")
 		}
-		fmt.Println("foi?")
 		panic(err)
 	}
 
