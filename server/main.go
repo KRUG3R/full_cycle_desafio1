@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
-	// _ "github.com/mattn/go-sqlite3"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
@@ -27,7 +29,7 @@ type Detalhes struct {
 	PctChange  string `json:"pctChange"`
 	Bid        string `json:"bid"`
 	Ask        string `json:"ask"`
-	Timestap   string `json:"timestamp"`
+	Timestamp  string `json:"timestamp"`
 	CreateDate string `json:"create_date"`
 }
 
@@ -63,13 +65,43 @@ func (cambio *Cambio) GetCambio() {
 func handler(w http.ResponseWriter, r *http.Request) {
 	var cambio Cambio
 	cambio.GetCambio()
+	err := PersisteDB(cambio)
+
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(cambio)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+	} else {
+		w.WriteHeader(http.StatusOK)
+		json.NewEncoder(w).Encode(cambio)
+	}
+
 }
 
-// func PersisteDB(cambio Cambio) {
-// 	db, err := sql.Open("sqlite3", "./cambio.db")
-// 	insertSQL := `INSERT INTO cambio (code, codein, name, high, low, varBid, pctChange, bid, ask, timestamp, create_date) Values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+func PersisteDB(cambio Cambio) error {
+	query := `INSERT INTO cotacao (code, codein, name, high, low, varBid, pctChange, bid, ask, timestamp, create_date) Values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	db, err := sql.Open("sqlite3", "../sqlite_setup/desafio1.db")
+	if err != nil {
+		msg := fmt.Errorf("Erro ao abrir o banco de dados: %v", err)
+		fmt.Println(msg)
+		return msg
+	}
+	defer db.Close()
 
-// }
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		msg := fmt.Errorf("Erro ao preparar a query: %v", err)
+		fmt.Println(msg)
+		return msg
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(cambio.USDBRL.Code, cambio.USDBRL.Codein, cambio.USDBRL.Name, cambio.USDBRL.High, cambio.USDBRL.Low, cambio.USDBRL.VarBid, cambio.USDBRL.PctChange, cambio.USDBRL.Bid, cambio.USDBRL.Ask, cambio.USDBRL.Timestamp, cambio.USDBRL.CreateDate)
+	if err != nil {
+		msg := fmt.Errorf("Erro ao executar a query: %v", err)
+		fmt.Println(msg)
+		return msg
+	}
+	return nil
+
+}
