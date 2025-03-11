@@ -15,7 +15,7 @@ import (
 func main() {
 	fmt.Println("Iniciando o Server")
 	defer fmt.Println("Finalizando Server")
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/cotacao", handler)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -70,14 +70,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	var cambio Cambio
 	cambio.GetCambio()
 	err := PersisteDB(cambio)
-
 	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(err.Error()))
 	} else {
+		cotacao := map[string]interface{}{"cotacao": cambio.USDBRL.Bid}
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(cambio)
+		json.NewEncoder(w).Encode(cotacao)
 	}
 
 }
